@@ -42,7 +42,7 @@ export async function runContainer(image, command) {
     stderr: true
   });
 
-  const logs = logsBuffer.toString("utf-8");
+  const logs = logsBuffer.toString("utf-8").replace(/\u0000/g, "");
   await container.remove({ force: true });
 
   return {

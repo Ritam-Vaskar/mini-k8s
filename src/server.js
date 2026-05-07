@@ -4,4 +4,5 @@ import { startScheduler } from "./scheduler/scheduler.js";
 
 app.listen(config.port, () => {
   startScheduler(config.schedulerPollMs);
+  console.log(`Server running on port ${config.port}`);
 });
