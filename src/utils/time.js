@@ -1,11 +1,6 @@
 import cronParser from "cron-parser";
 
-export type ScheduleInput =
-  | { type: "cron"; cron: string }
-  | { type: "interval"; seconds: number }
-  | { type: "once"; runAt?: Date | null };
-
-export function computeNextRunAt(input: ScheduleInput, from: Date): Date | null {
+export function computeNextRunAt(input, from) {
   if (input.type === "once") {
     return input.runAt ? new Date(input.runAt) : new Date(from);
   }

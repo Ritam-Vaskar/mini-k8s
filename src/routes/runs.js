@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { db } from "../db";
-import { runs } from "../db/schema";
+import { db } from "../db/index.js";
+import { runs } from "../db/schema.js";
 import { eq } from "drizzle-orm";
-import { stopContainer } from "../scheduler/dockerRunner";
+import { stopContainer } from "../scheduler/dockerRunner.js";
 
 export const runsRouter = Router();
 

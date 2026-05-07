@@ -1,11 +1,10 @@
 import { Router } from "express";
-import { db } from "../db";
-import { jobs, runs } from "../db/schema";
-import { eq, desc } from "drizzle-orm";
-import { computeNextRunAt } from "../utils/time";
-import { createJobSchema, updateJobSchema } from "../validation/jobSchemas";
-import { pollAndRunOnce } from "../scheduler/scheduler";
-import { sql } from "drizzle-orm";
+import { db } from "../db/index.js";
+import { jobs, runs } from "../db/schema.js";
+import { eq, desc, sql } from "drizzle-orm";
+import { computeNextRunAt } from "../utils/time.js";
+import { createJobSchema, updateJobSchema } from "../validation/jobSchemas.js";
+import { pollAndRunOnce } from "../scheduler/scheduler.js";
 
 export const jobsRouter = Router();
 
@@ -17,7 +16,7 @@ jobsRouter.post("/", async (req, res) => {
 
   const { schedule, ...rest } = parsed.data;
   const now = new Date();
-  let nextRunAt: Date | null;
+  let nextRunAt;
 
   try {
     nextRunAt = computeNextRunAt(
@@ -81,7 +80,7 @@ jobsRouter.patch("/:id", async (req, res) => {
   const payload = parsed.data;
   const now = new Date();
 
-  const updateData: Record<string, unknown> = {
+  const updateData = {
     updatedAt: now
   };
 
@@ -93,7 +92,7 @@ jobsRouter.patch("/:id", async (req, res) => {
 
   if (payload.schedule) {
     const schedule = payload.schedule;
-    let nextRunAt: Date | null;
+    let nextRunAt;
 
     try {
       nextRunAt = computeNextRunAt(
@@ -137,15 +136,13 @@ jobsRouter.post("/:id/run", async (req, res) => {
 
   if (job.concurrencyPolicy === "forbid") {
     const [runningOnly] = await db
-      .select({ count: sql<number>`count(*)` })
+      .select({ count: sql`count(*)` })
       .from(runs)
       .where(sql`${runs.jobId} = ${job.id} and ${runs.status} = 'running'`);
 
     if (Number(runningOnly?.count || 0) > 0) {
       return res.status(409).json({ error: "Job is already running" });
     }
-  }
-    return res.status(409).json({ error: "Job is already running" });
   }
 
   await db.update(jobs).set({ nextRunAt: new Date(), updatedAt: new Date() }).where(eq(jobs.id, job.id));

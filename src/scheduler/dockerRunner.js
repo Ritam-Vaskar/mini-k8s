@@ -1,19 +1,19 @@
 import Docker from "dockerode";
-import { config } from "../config";
+import { config } from "../config.js";
 import { parse } from "shell-quote";
 
 const docker = new Docker({
   socketPath: config.dockerHost || (process.platform === "win32" ? "//./pipe/docker_engine" : "/var/run/docker.sock")
 });
 
-async function pullImage(image: string): Promise<void> {
+async function pullImage(image) {
   return new Promise((resolve, reject) => {
     docker.pull(image, (err, stream) => {
       if (err) {
         reject(err);
         return;
       }
-      docker.modem.followProgress(stream, (pullErr: Error | null) => {
+      docker.modem.followProgress(stream, (pullErr) => {
         if (pullErr) {
           reject(pullErr);
           return;
@@ -24,10 +24,10 @@ async function pullImage(image: string): Promise<void> {
   });
 }
 
-export async function runContainer(image: string, command?: string) {
+export async function runContainer(image, command) {
   await pullImage(image);
 
-  const cmd = command ? parse(command).filter((part) => typeof part === "string") as string[] : undefined;
+  const cmd = command ? parse(command).filter((part) => typeof part === "string") : undefined;
 
   const container = await docker.createContainer({
     Image: image,
@@ -52,7 +52,7 @@ export async function runContainer(image: string, command?: string) {
   };
 }
 
-export async function stopContainer(containerId: string): Promise<void> {
+export async function stopContainer(containerId) {
   const container = docker.getContainer(containerId);
   await container.stop({ t: 5 });
   await container.remove({ force: true });

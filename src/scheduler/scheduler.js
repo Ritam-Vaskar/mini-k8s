@@ -1,12 +1,10 @@
-import { db } from "../db";
-import { jobs, runs } from "../db/schema";
+import { db } from "../db/index.js";
+import { jobs, runs } from "../db/schema.js";
 import { and, eq, sql } from "drizzle-orm";
-import { computeNextRunAt, ScheduleInput } from "../utils/time";
-import { runContainer } from "./dockerRunner";
+import { computeNextRunAt } from "../utils/time.js";
+import { runContainer } from "./dockerRunner.js";
 
-export type JobRow = typeof jobs.$inferSelect;
-
-function toScheduleInput(job: JobRow): ScheduleInput {
+function toScheduleInput(job) {
   if (job.scheduleType === "cron") {
     return { type: "cron", cron: job.cronExpression || "" };
   }
@@ -16,7 +14,7 @@ function toScheduleInput(job: JobRow): ScheduleInput {
   return { type: "once", runAt: job.runAt ? new Date(job.runAt) : undefined };
 }
 
-async function createRun(job: JobRow) {
+async function createRun(job) {
   const [run] = await db
     .insert(runs)
     .values({
@@ -28,7 +26,7 @@ async function createRun(job: JobRow) {
   return run;
 }
 
-async function startRun(job: JobRow, runId: number) {
+async function startRun(job, runId) {
   try {
     await db.update(runs).set({ status: "running", startedAt: new Date() }).where(eq(runs.id, runId));
 
@@ -50,11 +48,11 @@ async function startRun(job: JobRow, runId: number) {
   }
 }
 
-export async function pollAndRunOnce(): Promise<number> {
+export async function pollAndRunOnce() {
   const now = new Date();
 
   const dueJobs = await db.transaction(async (tx) => {
-    const result = await tx.execute<JobRow>(sql`
+    const result = await tx.execute(sql`
       select * from jobs
       where enabled = true
         and next_run_at is not null
@@ -68,7 +66,7 @@ export async function pollAndRunOnce(): Promise<number> {
   for (const job of dueJobs) {
     if (job.concurrencyPolicy === "forbid") {
       const runningCount = await db
-        .select({ count: sql<number>`count(*)` })
+        .select({ count: sql`count(*)` })
         .from(runs)
         .where(and(eq(runs.jobId, job.id), eq(runs.status, "running")));
 
@@ -93,7 +91,7 @@ export async function pollAndRunOnce(): Promise<number> {
   return dueJobs.length;
 }
 
-export function startScheduler(pollMs: number) {
+export function startScheduler(pollMs) {
   const tick = async () => {
     try {
       await pollAndRunOnce();

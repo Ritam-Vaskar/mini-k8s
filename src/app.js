@@ -1,6 +1,6 @@
 import express from "express";
-import { jobsRouter } from "./routes/jobs";
-import { runsRouter } from "./routes/runs";
+import { jobsRouter } from "./routes/jobs.js";
+import { runsRouter } from "./routes/runs.js";
 
 export const app = express();
 
